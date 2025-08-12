@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360 Specimen Viewer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            color: #333;
+            text-align: center;
+        }
+        #spinner-container {
+            width: 90%;
+            max-width: 400px; /* You can adjust this size */
+            cursor: grab;
+            user-select: none; /* Prevents text selection while dragging */
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #spinner-image {
+            width: 100%;
+            height: auto;
+            pointer-events: none; /* Prevents image drag ghosting */
+        }
+        h1 {
+            margin-bottom: 0.5em;
+        }
+        p {
+            margin-top: 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>360° Specimen Viewer</h1>
+    <p>Click and drag on the image to rotate.</p>
+
+    <div id="spinner-container">
+        <img id="spinner-image" src="frame_0.00.jpg" alt="360 specimen view">
+    </div>
+
+    <script>
+        // --- Updated list with 70 image frames ---
+        const imageUrls = [
+            "frame_0.00.jpg", "frame_0.48.jpg", "frame_0.97.jpg", "frame_1.45.jpg", 
+            "frame_1.93.jpg", "frame_2.42.jpg", "frame_2.90.jpg", "frame_3.38.jpg", 
+            "frame_3.87.jpg", "frame_4.35.jpg", "frame_4.84.jpg", "frame_5.32.jpg", 
+            "frame_5.80.jpg", "frame_6.29.jpg", "frame_6.77.jpg", "frame_7.25.jpg", 
+            "frame_7.74.jpg", "frame_8.22.jpg", "frame_8.70.jpg", "frame_9.19.jpg", 
+            "frame_9.67.jpg", "frame_10.15.jpg", "frame_10.64.jpg", "frame_11.12.jpg", 
+            "frame_11.61.jpg", "frame_12.09.jpg", "frame_12.57.jpg", "frame_13.06.jpg", 
+            "frame_13.54.jpg", "frame_14.02.jpg", "frame_14.51.jpg", "frame_14.99.jpg", 
+            "frame_15.47.jpg", "frame_15.96.jpg", "frame_16.44.jpg", "frame_16.92.jpg", 
+            "frame_17.41.jpg", "frame_17.89.jpg", "frame_18.38.jpg", "frame_18.86.jpg", 
+            "frame_19.34.jpg", "frame_19.83.jpg", "frame_20.31.jpg", "frame_20.79.jpg", 
+            "frame_21.28.jpg", "frame_21.76.jpg", "frame_22.24.jpg", "frame_22.73.jpg", 
+            "frame_23.21.jpg", "frame_23.69.jpg", "frame_24.18.jpg", "frame_24.66.jpg", 
+            "frame_25.14.jpg", "frame_25.63.jpg", "frame_26.11.jpg", "frame_26.60.jpg", 
+            "frame_27.08.jpg", "frame_27.56.jpg", "frame_28.05.jpg", "frame_28.53.jpg", 
+            "frame_29.01.jpg", "frame_29.50.jpg", "frame_29.98.jpg", "frame_30.46.jpg", 
+            "frame_30.95.jpg", "frame_31.43.jpg", "frame_31.91.jpg"
+        ];
+        // ------------------------------------
+
+        const spinnerImage = document.getElementById('spinner-image');
+        const spinnerContainer = document.getElementById('spinner-container');
+        
+        let currentFrame = 0;
+        let isDragging = false;
+        let lastX = 0;
+
+        function preloadImages() {
+            imageUrls.forEach(src => {
+                const img = new Image();
+                img.src = src;
+            });
+        }
+
+        function updateImage(newX) {
+            const deltaX = newX - lastX;
+            const sensitivity = 5; // Lower number for more sensitivity with more frames
+            
+            if (Math.abs(deltaX) > sensitivity) {
+                currentFrame = deltaX > 0 ? currentFrame + 1 : currentFrame - 1;
+
+                if (currentFrame >= imageUrls.length) currentFrame = 0;
+                if (currentFrame < 0) currentFrame = imageUrls.length - 1;
+
+                spinnerImage.src = imageUrls[currentFrame];
+                lastX = newX;
+            }
+        }
+
+        const startDrag = (clientX) => {
+            isDragging = true;
+            lastX = clientX;
+            spinnerContainer.style.cursor = 'grabbing';
+        };
+
+        const stopDrag = () => {
+            isDragging = false;
+            spinnerContainer.style.cursor = 'grab';
+        };
+
+        const drag = (clientX) => {
+            if (isDragging) updateImage(clientX);
+        };
+
+        spinnerContainer.addEventListener('mousedown', (e) => startDrag(e.clientX));
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('mousemove', (e) => drag(e.clientX));
+        
+        spinnerContainer.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientX), { passive: true });
+        window.addEventListener('touchend', stopDrag);
+        window.addEventListener('touchmove', (e) => drag(e.touches[0].clientX));
+
+        preloadImages();
+    </script>
+
+</body>
+</html>
