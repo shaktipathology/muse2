@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>360 Specimen Viewer with Zoom & Pan</title>
+    <title>360 Specimen Viewer with Contained Zoom</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -16,6 +16,7 @@
             background-color: #f0f0f0;
             color: #333;
             text-align: center;
+            overflow: hidden; /* Prevents accidental scrollbars */
         }
         #viewer-container {
             display: flex;
@@ -23,23 +24,24 @@
             align-items: center;
         }
         #spinner-container {
-            width: 90%;
+            width: 90vw;
             max-width: 400px;
             user-select: none;
             border: 1px solid #ccc;
             border-radius: 8px;
-            overflow: hidden; /* This is crucial for panning to work correctly */
             background-color: #fff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            cursor: grab; /* Default cursor is for rotating */
+            cursor: grab;
         }
-        #spinner-image {
+        /* This DIV will now hold the background image */
+        #spinner-image-div {
             width: 100%;
-            height: auto;
-            display: block;
-            pointer-events: none; /* Let the container handle all events */
-            transform-origin: center center;
-            transition: transform 0.2s ease-out; /* Smooth transition for zooming */
+            aspect-ratio: 3 / 4; /* Maintain a portrait aspect ratio */
+            background-repeat: no-repeat;
+            background-position: center;
+            /* Set initial zoom and transition for smoothness */
+            background-size: 100%;
+            transition: background-size 0.2s ease-out;
         }
         #zoom-controls {
             margin-top: 15px;
@@ -77,7 +79,7 @@
 
     <div id="viewer-container">
         <div id="spinner-container">
-            <img id="spinner-image" src="frame_0.00.jpg" alt="360 specimen view">
+            <div id="spinner-image-div" role="img" aria-label="360 specimen view"></div>
         </div>
 
         <div id="zoom-controls">
@@ -108,63 +110,61 @@
             "frame_30.95.jpg", "frame_31.43.jpg", "frame_31.91.jpg"
         ];
 
-        // --- State Variables ---
-        const spinnerImage = document.getElementById('spinner-image');
+        const spinnerDiv = document.getElementById('spinner-image-div');
         const spinnerContainer = document.getElementById('spinner-container');
+        
         let currentFrame = 0, zoomLevel = 1, isDragging = false;
-        let lastX = 0, lastY = 0, translateX = 0, translateY = 0;
+        let lastX = 0, lastY = 0, panX = 50, panY = 50; // Pan values are percentages
 
-        // --- Rotation Logic ---
-        function rotateImage(newX) {
-            const sensitivity = 10; // Drag farther for each frame change
+        function updateImage(newX) {
+            const sensitivity = 10;
             if (Math.abs(newX - lastX) > sensitivity) {
                 currentFrame += (newX > lastX) ? 1 : -1;
                 if (currentFrame >= imageUrls.length) currentFrame = 0;
                 if (currentFrame < 0) currentFrame = imageUrls.length - 1;
-                spinnerImage.src = imageUrls[currentFrame];
+                spinnerDiv.style.backgroundImage = `url(${imageUrls[currentFrame]})`;
                 lastX = newX;
             }
         }
 
-        // --- Panning Logic ---
-        function panImage(newX, newY) {
-            const deltaX = newX - lastX;
-            const deltaY = newY - lastY;
-            translateX += deltaX;
-            translateY += deltaY;
-            lastX = newX;
-            lastY = newY;
-            updateTransform();
-        }
+        function panImage(clientX, clientY) {
+            const rect = spinnerContainer.getBoundingClientRect();
+            const newPanX = panX + (clientX - lastX) / rect.width * 100;
+            const newPanY = panY + (clientY - lastY) / rect.height * 100;
 
-        // --- Zoom Logic ---
-        function updateTransform() {
-            spinnerImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+            const maxPan = 100 - (50 / (zoomLevel / 2));
+            const minPan = 100 - maxPan;
+
+            panX = Math.max(minPan, Math.min(maxPan, newPanX));
+            panY = Math.max(minPan, Math.min(maxPan, newPanY));
+
+            spinnerDiv.style.backgroundPosition = `${panX}% ${panY}%`;
+            lastX = clientX;
+            lastY = clientY;
         }
 
         function changeZoom(direction) {
             const zoomStep = 0.2;
             const newZoom = zoomLevel + direction * zoomStep;
-            const minZoom = 1.0, maxZoom = 3.0;
-
+            const minZoom = 1.0, maxZoom = 4.0;
             zoomLevel = Math.max(minZoom, Math.min(maxZoom, newZoom));
             
-            if (zoomLevel <= 1) resetPan(); // Reset pan when zoomed all the way out
-            else updateTransform();
+            spinnerDiv.style.backgroundSize = `${zoomLevel * 100}%`;
+            if (zoomLevel <= 1) resetPan(); // Reset pan when fully zoomed out
         }
 
         function resetPan() {
-            translateX = 0;
-            translateY = 0;
-            updateTransform();
+            panX = 50;
+            panY = 50;
+            spinnerDiv.style.backgroundPosition = 'center';
         }
 
         function resetAll() {
-            zoomLevel = 1;
+            zoomLevel = 1.0;
+            spinnerDiv.style.backgroundSize = '100%';
             resetPan();
         }
 
-        // --- Event Handlers ---
         function onDragStart(clientX, clientY) {
             isDragging = true;
             lastX = clientX;
@@ -177,16 +177,15 @@
             if (zoomLevel > 1) {
                 panImage(clientX, clientY);
             } else {
-                rotateImage(clientX);
+                updateImage(clientX);
             }
         }
 
         function onDragEnd() {
             isDragging = false;
-            spinnerContainer.style.cursor = (zoomLevel > 1) ? 'move' : 'grab';
+            spinnerContainer.style.cursor = 'grab';
         }
-        
-        // --- Event Listeners ---
+
         document.getElementById('zoom-in').addEventListener('click', () => changeZoom(1));
         document.getElementById('zoom-out').addEventListener('click', () => changeZoom(-1));
         document.getElementById('zoom-reset').addEventListener('click', resetAll);
@@ -199,12 +198,11 @@
         window.addEventListener('touchend', onDragEnd);
         window.addEventListener('touchmove', e => onDragMove(e.touches[0].clientX, e.touches[0].clientY));
 
-        // --- Initial Setup ---
-        function preloadImages() {
-            imageUrls.forEach(src => { (new Image()).src = src; });
+        function initialize() {
+            imageUrls.forEach(src => { (new Image()).src = src; }); // Preload images
+            spinnerDiv.style.backgroundImage = `url(${imageUrls[0]})`;
         }
-        preloadImages();
-        
+        initialize();
     </script>
 
 </body>
