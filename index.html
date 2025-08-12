@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>360 Specimen Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>360 Specimen Viewer with Zoom & Pan</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -11,27 +11,54 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
             color: #333;
             text-align: center;
         }
+        #viewer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
         #spinner-container {
             width: 90%;
-            max-width: 400px; /* You can adjust this size */
-            cursor: grab;
-            user-select: none; /* Prevents text selection while dragging */
+            max-width: 400px;
+            user-select: none;
             border: 1px solid #ccc;
             border-radius: 8px;
-            overflow: hidden;
+            overflow: hidden; /* This is crucial for panning to work correctly */
             background-color: #fff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: grab; /* Default cursor is for rotating */
         }
         #spinner-image {
             width: 100%;
             height: auto;
-            pointer-events: none; /* Prevents image drag ghosting */
+            display: block;
+            pointer-events: none; /* Let the container handle all events */
+            transform-origin: center center;
+            transition: transform 0.2s ease-out; /* Smooth transition for zooming */
+        }
+        #zoom-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        .zoom-button {
+            padding: 8px 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        .zoom-button:hover {
+            background-color: #e9e9e9;
         }
         h1 {
             margin-bottom: 0.5em;
@@ -39,20 +66,28 @@
         p {
             margin-top: 0;
             color: #666;
+            max-width: 90%;
         }
     </style>
 </head>
 <body>
 
     <h1>360° Specimen Viewer</h1>
-    <p>Click and drag on the image to rotate.</p>
+    <p>Drag to rotate. Zoom in, then drag to pan the image.</p>
 
-    <div id="spinner-container">
-        <img id="spinner-image" src="frame_0.00.jpg" alt="360 specimen view">
+    <div id="viewer-container">
+        <div id="spinner-container">
+            <img id="spinner-image" src="frame_0.00.jpg" alt="360 specimen view">
+        </div>
+
+        <div id="zoom-controls">
+            <button id="zoom-in" class="zoom-button" aria-label="Zoom In">+</button>
+            <button id="zoom-out" class="zoom-button" aria-label="Zoom Out">-</button>
+            <button id="zoom-reset" class="zoom-button" aria-label="Reset Zoom">Reset</button>
+        </div>
     </div>
 
     <script>
-        // --- Updated list with 70 image frames ---
         const imageUrls = [
             "frame_0.00.jpg", "frame_0.48.jpg", "frame_0.97.jpg", "frame_1.45.jpg", 
             "frame_1.93.jpg", "frame_2.42.jpg", "frame_2.90.jpg", "frame_3.38.jpg", 
@@ -72,61 +107,104 @@
             "frame_29.01.jpg", "frame_29.50.jpg", "frame_29.98.jpg", "frame_30.46.jpg", 
             "frame_30.95.jpg", "frame_31.43.jpg", "frame_31.91.jpg"
         ];
-        // ------------------------------------
 
+        // --- State Variables ---
         const spinnerImage = document.getElementById('spinner-image');
         const spinnerContainer = document.getElementById('spinner-container');
-        
-        let currentFrame = 0;
-        let isDragging = false;
-        let lastX = 0;
+        let currentFrame = 0, zoomLevel = 1, isDragging = false;
+        let lastX = 0, lastY = 0, translateX = 0, translateY = 0;
 
-        function preloadImages() {
-            imageUrls.forEach(src => {
-                const img = new Image();
-                img.src = src;
-            });
-        }
-
-        function updateImage(newX) {
-            const deltaX = newX - lastX;
-            const sensitivity = 5; // Lower number for more sensitivity with more frames
-            
-            if (Math.abs(deltaX) > sensitivity) {
-                currentFrame = deltaX > 0 ? currentFrame + 1 : currentFrame - 1;
-
+        // --- Rotation Logic ---
+        function rotateImage(newX) {
+            const sensitivity = 10; // Drag farther for each frame change
+            if (Math.abs(newX - lastX) > sensitivity) {
+                currentFrame += (newX > lastX) ? 1 : -1;
                 if (currentFrame >= imageUrls.length) currentFrame = 0;
                 if (currentFrame < 0) currentFrame = imageUrls.length - 1;
-
                 spinnerImage.src = imageUrls[currentFrame];
                 lastX = newX;
             }
         }
 
-        const startDrag = (clientX) => {
+        // --- Panning Logic ---
+        function panImage(newX, newY) {
+            const deltaX = newX - lastX;
+            const deltaY = newY - lastY;
+            translateX += deltaX;
+            translateY += deltaY;
+            lastX = newX;
+            lastY = newY;
+            updateTransform();
+        }
+
+        // --- Zoom Logic ---
+        function updateTransform() {
+            spinnerImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomLevel})`;
+        }
+
+        function changeZoom(direction) {
+            const zoomStep = 0.2;
+            const newZoom = zoomLevel + direction * zoomStep;
+            const minZoom = 1.0, maxZoom = 3.0;
+
+            zoomLevel = Math.max(minZoom, Math.min(maxZoom, newZoom));
+            
+            if (zoomLevel <= 1) resetPan(); // Reset pan when zoomed all the way out
+            else updateTransform();
+        }
+
+        function resetPan() {
+            translateX = 0;
+            translateY = 0;
+            updateTransform();
+        }
+
+        function resetAll() {
+            zoomLevel = 1;
+            resetPan();
+        }
+
+        // --- Event Handlers ---
+        function onDragStart(clientX, clientY) {
             isDragging = true;
             lastX = clientX;
-            spinnerContainer.style.cursor = 'grabbing';
-        };
+            lastY = clientY;
+            spinnerContainer.style.cursor = (zoomLevel > 1) ? 'move' : 'grabbing';
+        }
 
-        const stopDrag = () => {
+        function onDragMove(clientX, clientY) {
+            if (!isDragging) return;
+            if (zoomLevel > 1) {
+                panImage(clientX, clientY);
+            } else {
+                rotateImage(clientX);
+            }
+        }
+
+        function onDragEnd() {
             isDragging = false;
-            spinnerContainer.style.cursor = 'grab';
-        };
-
-        const drag = (clientX) => {
-            if (isDragging) updateImage(clientX);
-        };
-
-        spinnerContainer.addEventListener('mousedown', (e) => startDrag(e.clientX));
-        window.addEventListener('mouseup', stopDrag);
-        window.addEventListener('mousemove', (e) => drag(e.clientX));
+            spinnerContainer.style.cursor = (zoomLevel > 1) ? 'move' : 'grab';
+        }
         
-        spinnerContainer.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientX), { passive: true });
-        window.addEventListener('touchend', stopDrag);
-        window.addEventListener('touchmove', (e) => drag(e.touches[0].clientX));
+        // --- Event Listeners ---
+        document.getElementById('zoom-in').addEventListener('click', () => changeZoom(1));
+        document.getElementById('zoom-out').addEventListener('click', () => changeZoom(-1));
+        document.getElementById('zoom-reset').addEventListener('click', resetAll);
+        
+        spinnerContainer.addEventListener('mousedown', e => onDragStart(e.clientX, e.clientY));
+        window.addEventListener('mouseup', onDragEnd);
+        window.addEventListener('mousemove', e => onDragMove(e.clientX, e.clientY));
+        
+        spinnerContainer.addEventListener('touchstart', e => onDragStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+        window.addEventListener('touchend', onDragEnd);
+        window.addEventListener('touchmove', e => onDragMove(e.touches[0].clientX, e.touches[0].clientY));
 
+        // --- Initial Setup ---
+        function preloadImages() {
+            imageUrls.forEach(src => { (new Image()).src = src; });
+        }
         preloadImages();
+        
     </script>
 
 </body>
