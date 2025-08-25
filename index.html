@@ -3,205 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>360 Specimen Viewer - Zoom Locked</title>
+    <title>Interactive Specimen Study</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             min-height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            background-color: #f4f7f9;
             color: #333;
             text-align: center;
-            overflow: hidden; /* Prevents accidental scrollbars */
         }
-        #viewer-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        .main-container {
+            width: 90%;
+            max-width: 700px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            padding: 20px 30px;
+            margin: 20px 0;
         }
-        #spinner-container {
-            width: 90vw;
-            max-width: 400px;
-            user-select: none;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            cursor: grab;
+        header h1 {
+            font-size: 1.8em;
+            color: #2c3e50;
+            margin-bottom: 5px;
         }
-        #spinner-image-div {
-            width: 100%;
-            aspect-ratio: 3 / 4;
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: 100%;
-            transition: background-size 0.2s ease-out;
-        }
-        #zoom-controls {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-        }
-        .zoom-button {
-            padding: 8px 15px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #fff;
-            cursor: pointer;
+        header p {
             font-size: 1.1em;
-            font-weight: bold;
+            color: #7f8c8d;
+            margin-top: 0;
+        }
+        #video-container {
+            width: 100%;
+            margin: 20px 0;
+            cursor: grab;
             user-select: none;
-            transition: background-color 0.2s;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e1e1e1;
         }
-        .zoom-button:hover {
-            background-color: #e9e9e9;
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+            pointer-events: none; /* Let the container handle events */
         }
-        h1, p {
-            max-width: 90%;
+        .notes-section {
+            text-align: left;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eeeeee;
+        }
+        .notes-section h2 {
+            font-size: 1.4em;
+            color: #34495e;
+            margin-bottom: 10px;
+        }
+        .notes-section p {
+            font-size: 1em;
+            line-height: 1.6;
+            color: #555;
+        }
+        .notes-section ul {
+            padding-left: 20px;
+        }
+        .notes-section li {
+            margin-bottom: 8px;
         }
     </style>
 </head>
 <body>
 
-    <h1>360° Specimen Viewer</h1>
-    <p>Drag to rotate. Zoom in, then drag to pan the image.</p>
+    <div class="main-container">
+        <header>
+            <h1>Interactive Specimen Analysis</h1>
+            <p>Drag the specimen to observe its features from all angles.</p>
+        </header>
 
-    <div id="viewer-container">
-        <div id="spinner-container">
-            <div id="spinner-image-div" role="img" aria-label="360 specimen view"></div>
+        <div id="video-container">
+            <!-- The video is muted and preloaded, but has no default controls -->
+            <video id="interactive-video" muted playsinline preload="auto">
+                <!-- IMPORTANT: Replace this with the path to YOUR video file -->
+                <source src="path/to/your/video.mp4" type="video/video/mp4">
+                Your browser does not support the video tag.
+            </video>
         </div>
 
-        <div id="zoom-controls">
-            <button id="zoom-in" class="zoom-button" aria-label="Zoom In">+</button>
-            <button id="zoom-out" class="zoom-button" aria-label="Zoom Out">-</button>
-            <button id="zoom-reset" class="zoom-button" aria-label="Reset Zoom">Reset</button>
-        </div>
+        <section class="notes-section">
+            <h2>Specimen Notes: Heart (Cross-Section)</h2>
+            <p>This specimen shows a coronal cross-section of a mammalian heart. By scrubbing through the video, you can observe the four primary chambers:</p>
+            <ul>
+                <li><strong>Right Atrium:</strong> Receives deoxygenated blood from the body.</li>
+                <li><strong>Right Ventricle:</strong> Pumps deoxygenated blood to the lungs.</li>
+                <li><strong>Left Atrium:</strong> Receives oxygenated blood from the lungs.</li>
+                <li><strong>Left Ventricle:</strong> The strongest chamber, pumping oxygenated blood to the rest of the body.</li>
+            </ul>
+            <p>Pay close attention to the thickness of the ventricular walls, especially the myocardium of the left ventricle.</p>
+        </section>
     </div>
 
     <script>
-        const imageUrls = [
-            "frame_0.00.jpg", "frame_0.48.jpg", "frame_0.97.jpg", "frame_1.45.jpg", 
-            "frame_1.93.jpg", "frame_2.42.jpg", "frame_2.90.jpg", "frame_3.38.jpg", 
-            "frame_3.87.jpg", "frame_4.35.jpg", "frame_4.84.jpg", "frame_5.32.jpg", 
-            "frame_5.80.jpg", "frame_6.29.jpg", "frame_6.77.jpg", "frame_7.25.jpg", 
-            "frame_7.74.jpg", "frame_8.22.jpg", "frame_8.70.jpg", "frame_9.19.jpg", 
-            "frame_9.67.jpg", "frame_10.15.jpg", "frame_10.64.jpg", "frame_11.12.jpg", 
-            "frame_11.61.jpg", "frame_12.09.jpg", "frame_12.57.jpg", "frame_13.06.jpg", 
-            "frame_13.54.jpg", "frame_14.02.jpg", "frame_14.51.jpg", "frame_14.99.jpg", 
-            "frame_15.47.jpg", "frame_15.96.jpg", "frame_16.44.jpg", "frame_16.92.jpg", 
-            "frame_17.41.jpg", "frame_17.89.jpg", "frame_18.38.jpg", "frame_18.86.jpg", 
-            "frame_19.34.jpg", "frame_19.83.jpg", "frame_20.31.jpg", "frame_20.79.jpg", 
-            "frame_21.28.jpg", "frame_21.76.jpg", "frame_22.24.jpg", "frame_22.73.jpg", 
-            "frame_23.21.jpg", "frame_23.69.jpg", "frame_24.18.jpg", "frame_24.66.jpg", 
-            "frame_25.14.jpg", "frame_25.63.jpg", "frame_26.11.jpg", "frame_26.60.jpg", 
-            "frame_27.08.jpg", "frame_27.56.jpg", "frame_28.05.jpg", "frame_28.53.jpg", 
-            "frame_29.01.jpg", "frame_29.50.jpg", "frame_29.98.jpg", "frame_30.46.jpg", 
-            "frame_30.95.jpg", "frame_31.43.jpg", "frame_31.91.jpg"
-        ];
+        const video = document.getElementById('interactive-video');
+        const videoContainer = document.getElementById('video-container');
 
-        const spinnerDiv = document.getElementById('spinner-image-div');
-        const spinnerContainer = document.getElementById('spinner-container');
-        
-        let currentFrame = 0, zoomLevel = 1, isDragging = false;
-        let lastX = 0, lastY = 0, panX = 50, panY = 50;
+        let isDragging = false;
+        let lastX = 0;
 
-        // --- Core Viewer Logic (Unchanged) ---
-        function updateImage(newX) {
-            const sensitivity = 10;
-            if (Math.abs(newX - lastX) > sensitivity) {
-                currentFrame = (newX > lastX) ? (currentFrame + 1) : (currentFrame - 1);
-                if (currentFrame >= imageUrls.length) currentFrame = 0;
-                if (currentFrame < 0) currentFrame = imageUrls.length - 1;
-                spinnerDiv.style.backgroundImage = `url(${imageUrls[currentFrame]})`;
-                lastX = newX;
-            }
-        }
+        // Ensure the video is paused initially and ready for scrubbing
+        video.pause();
 
-        function panImage(clientX, clientY) {
-            const rect = spinnerContainer.getBoundingClientRect();
-            const newPanX = panX + (clientX - lastX) / rect.width * 100;
-            const newPanY = panY + (clientY - lastY) / rect.height * 100;
-            const maxPan = 100 - (50 / (zoomLevel / 2));
-            const minPan = 100 - maxPan;
-            panX = Math.max(minPan, Math.min(maxPan, newPanX));
-            panY = Math.max(minPan, Math.min(maxPan, newPanY));
-            spinnerDiv.style.backgroundPosition = `${panX}% ${panY}%`;
-            lastX = clientX;
-            lastY = clientY;
-        }
-
-        function changeZoom(direction) {
-            const zoomStep = 0.2;
-            const newZoom = zoomLevel + direction * zoomStep;
-            const minZoom = 1.0, maxZoom = 4.0;
-            zoomLevel = Math.max(minZoom, Math.min(maxZoom, newZoom));
-            spinnerDiv.style.backgroundSize = `${zoomLevel * 100}%`;
-            if (zoomLevel <= 1) resetPan();
-        }
-
-        function resetPan() {
-            panX = 50; panY = 50;
-            spinnerDiv.style.backgroundPosition = 'center';
-        }
-
-        function resetAll() {
-            zoomLevel = 1.0;
-            spinnerDiv.style.backgroundSize = '100%';
-            resetPan();
-        }
-
-        function onDragStart(clientX, clientY) {
-            isDragging = true;
-            lastX = clientX; lastY = clientY;
-            spinnerContainer.style.cursor = (zoomLevel > 1) ? 'move' : 'grabbing';
-        }
-        function onDragMove(clientX, clientY) {
-            if (!isDragging) return;
-            if (zoomLevel > 1) { panImage(clientX, clientY); } 
-            else { updateImage(clientX); }
-        }
-        function onDragEnd() {
-            isDragging = false;
-            spinnerContainer.style.cursor = 'grab';
-        }
-
-        document.getElementById('zoom-in').addEventListener('click', () => changeZoom(1));
-        document.getElementById('zoom-out').addEventListener('click', () => changeZoom(-1));
-        document.getElementById('zoom-reset').addEventListener('click', resetAll);
-        
-        spinnerContainer.addEventListener('mousedown', e => onDragStart(e.clientX, e.clientY));
-        window.addEventListener('mouseup', onDragEnd);
-        window.addEventListener('mousemove', e => onDragMove(e.clientX, e.clientY));
-        
-        spinnerContainer.addEventListener('touchstart', e => onDragStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
-        window.addEventListener('touchend', onDragEnd);
-        window.addEventListener('touchmove', e => onDragMove(e.touches[0].clientX, e.touches[0].clientY));
-
-        function initialize() {
-            imageUrls.forEach(src => { (new Image()).src = src; });
-            spinnerDiv.style.backgroundImage = `url(${imageUrls[0]})`;
-        }
-        initialize();
-
-        // --- NEW: Aggressive Browser Zoom Prevention ---
-        // Prevents pinch-to-zoom and other multi-touch gestures on the whole page.
-        document.addEventListener('gesturestart', function (e) {
-            e.preventDefault();
+        // Wait for video metadata to load to get its duration
+        video.addEventListener('loadedmetadata', () => {
+            // Set the video to the first frame
+            video.currentTime = 0;
         });
 
-        // Prevents double-tap to zoom.
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function (event) {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
+        const scrubVideo = (clientX) => {
+            if (!video.duration) return; // Don't do anything if video duration is not known
+
+            const rect = videoContainer.getBoundingClientRect();
+            const sensitivity = 50; // Higher number = less sensitive scrubbing
+            const deltaX = clientX - lastX;
+            
+            // Calculate how much to change the video time
+            const scrubAmount = (deltaX / rect.width) * video.duration / (100 / sensitivity);
+            
+            // Update the video's current time
+            let newTime = video.currentTime + scrubAmount;
+            
+            // Clamp the time between 0 and video duration
+            newTime = Math.max(0, Math.min(video.duration, newTime));
+            
+            video.currentTime = newTime;
+            lastX = clientX;
+        };
+
+        const onDragStart = (clientX) => {
+            isDragging = true;
+            lastX = clientX;
+            videoContainer.style.cursor = 'grabbing';
+        };
+
+        const onDragMove = (clientX) => {
+            if (isDragging) {
+                scrubVideo(clientX);
             }
-            lastTouchEnd = now;
-        }, false);
+        };
+
+        const onDragEnd = () => {
+            isDragging = false;
+            videoContainer.style.cursor = 'grab';
+        };
+
+        // Mouse Events
+        videoContainer.addEventListener('mousedown', (e) => onDragStart(e.clientX));
+        window.addEventListener('mousemove', (e) => onDragMove(e.clientX));
+        window.addEventListener('mouseup', onDragEnd);
+
+        // Touch Events
+        videoContainer.addEventListener('touchstart', (e) => onDragStart(e.touches[0].clientX), { passive: true });
+        window.addEventListener('touchmove', (e) => onDragMove(e.touches[0].clientX));
+        window.addEventListener('touchend', onDragEnd);
+
     </script>
 
 </body>
